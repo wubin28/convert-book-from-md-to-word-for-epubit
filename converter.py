@@ -87,8 +87,8 @@ def find_table_style(doc):
 def add_gray_background(paragraph):
     """Add light gray background to a paragraph."""
     try:
-        # Use light gray color (F5F5F5 is a very light gray)
-        shading_xml = f'<w:shd {nsdecls("w")} w:fill="F5F5F5"/>'
+        # Use F2F2F2 color (RGB all set to F2)
+        shading_xml = f'<w:shd {nsdecls("w")} w:fill="F2F2F2"/>'
         shading_element = OxmlElement(shading_xml)
         paragraph._element.get_or_add_pPr().append(shading_element)
     except:
@@ -244,23 +244,32 @@ def process_code_block(doc, lines, i, styles):
         p = add_paragraph_with_formatting(doc, lines[i], styles['Caption'])
         i += 1
     
-    # Add each line of the code block
-    for code_line in code_lines:
-        p = doc.add_paragraph(code_line)
-        # Apply "No Spacing" style if available
-        if styles['No Spacing']:
-            try:
-                p.style = styles['No Spacing']
-            except:
-                pass
+    # Special handling for markdown code blocks - format like 【避坑指南】
+    if code_lang.lower() == 'markdown':
+        # Create a title for the markdown block with dark orange background
+        title_text = "Markdown 内容"
         
-        # Add light gray background
-        add_gray_background(p)
-        
-        # Format with monospace font
-        for run in p.runs:
-            run.font.name = 'Courier New'
-            run.font.size = Pt(9)
+        # Create the styled box with orange backgrounds (similar to 【避坑指南】)
+        create_bidi_box(doc, title_text, code_lines)
+    else:
+        # Regular code block formatting (default)
+        # Add each line of the code block
+        for code_line in code_lines:
+            p = doc.add_paragraph(code_line)
+            # Apply "No Spacing" style if available
+            if styles['No Spacing']:
+                try:
+                    p.style = styles['No Spacing']
+                except:
+                    pass
+            
+            # Add light gray background
+            add_gray_background(p)
+            
+            # Format with monospace font
+            for run in p.runs:
+                run.font.name = 'Courier New'
+                run.font.size = Pt(9)
     
     return i
 
