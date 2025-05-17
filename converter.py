@@ -246,11 +246,11 @@ def process_code_block(doc, lines, i, styles):
     
     # Special handling for markdown code blocks - format like 【避坑指南】
     if code_lang.lower() == 'markdown':
-        # Create a title for the markdown block with dark orange background
+        # Create a title for the markdown block with purple background
         title_text = "Markdown 内容"
         
-        # Create the styled box with orange backgrounds (similar to 【避坑指南】)
-        create_bidi_box(doc, title_text, code_lines)
+        # Create the styled box with purple title background (0x5C, 0x4A, 0x77)
+        create_bidi_box(doc, title_text, code_lines, title_color='5C4A77')
     else:
         # Regular code block formatting (default)
         # Add each line of the code block
