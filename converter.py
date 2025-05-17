@@ -314,6 +314,49 @@ def create_bidi_box(doc, title_text, content_lines, title_color='E36C09', conten
                 run = p_content.add_run(segment_text)
                 run.bold = is_bold
 
+def process_aside_block(doc, lines, i):
+    """
+    Process aside sections (【避坑指南】) in markdown and format them with orange backgrounds.
+    
+    Args:
+        doc: The Word document object
+        lines: All lines of the markdown content
+        i: Current line index
+        
+    Returns:
+        Updated line index after processing the aside block
+    """
+    line = lines[i]
+    
+    # Handle <aside> tag followed by 【避坑指南】
+    if line.strip() == "<aside>":
+        i += 1  # Move to next line that should contain 【避坑指南】
+        if i < len(lines) and "【避坑指南】" in lines[i]:
+            line = lines[i]
+        else:
+            return i  # Skip malformed aside
+    
+    # Go through the content to collect all lines
+    i += 1  # Move past the header
+    content_lines = []
+    
+    while i < len(lines):
+        if lines[i].strip() == "</aside>" or lines[i].strip().startswith("#") or "【避坑指南】" in lines[i]:
+            break
+        
+        if lines[i].strip():
+            content_lines.append(lines[i])
+        i += 1
+    
+    # Create the styled box with orange backgrounds
+    create_bidi_box(doc, line, content_lines)
+    
+    # Skip </aside> tag if present
+    if i < len(lines) and lines[i].strip() == "</aside>":
+        i += 1
+    
+    return i
+
 def convert_markdown_to_docx(markdown_content, template_path, output_path, markdown_file=None):
     """Convert markdown content to DOCX using the template as a base."""
     # Copy template to output file
@@ -441,32 +484,7 @@ def convert_markdown_to_docx(markdown_content, template_path, output_path, markd
         
         # Process aside sections (【避坑指南】)
         if line.strip() == "<aside>" or "【避坑指南】" in line:
-            if line.strip() == "<aside>":
-                i += 1  # Move to next line that should contain 【避坑指南】
-                if i < len(lines) and "【避坑指南】" in lines[i]:
-                    line = lines[i]
-                else:
-                    continue  # Skip malformed aside
-            
-            # Go through the content to collect all lines
-            i += 1  # Move past the header
-            content_lines = []
-            
-            while i < len(lines):
-                if lines[i].strip() == "</aside>" or lines[i].strip().startswith("#") or "【避坑指南】" in lines[i]:
-                    break
-                
-                if lines[i].strip():
-                    content_lines.append(lines[i])
-                i += 1
-            
-            # Create the styled box with orange backgrounds
-            create_bidi_box(doc, line, content_lines)
-            
-            # Skip </aside> tag if present
-            if i < len(lines) and lines[i].strip() == "</aside>":
-                i += 1
-            
+            i = process_aside_block(doc, lines, i)
             continue
         
         # Process bullet lists
