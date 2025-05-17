@@ -375,6 +375,49 @@ def process_aside_block(doc, lines, i):
     
     return i
 
+def insert_image(doc, img_path, alt_text, styles, markdown_file=None):
+    """
+    处理图片插入逻辑，将图片添加到文档中并添加可选的标题文本。
+    
+    Args:
+        doc: Word文档对象
+        img_path: 图片路径（可能是相对路径或绝对路径）
+        alt_text: 图片的替代文本或标题
+        styles: 文档样式字典
+        markdown_file: 原始Markdown文件的路径，用于解析相对路径
+        
+    Returns:
+        None
+    """
+    # 如果图片路径是相对路径，将其解析为绝对路径
+    if not os.path.isabs(img_path) and markdown_file:
+        img_path = os.path.join(os.path.dirname(os.path.abspath(markdown_file)), img_path)
+    
+    try:
+        # 检查图片是否存在
+        if os.path.exists(img_path):
+            # 添加图片到文档，设置合理的宽度
+            doc.add_picture(img_path, width=Inches(6))
+            
+            # 如果提供了替代文本，添加为图片标题
+            if alt_text:
+                caption = doc.add_paragraph(alt_text)
+                if styles['Caption']:
+                    try:
+                        caption.style = styles['Caption']
+                    except:
+                        # 如果无法应用标题样式，使用居中对齐和斜体作为回退
+                        caption.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                        for run in caption.runs:
+                            run.italic = True
+                            run.font.size = Pt(10)
+        else:
+            # 添加缺失图片的占位符
+            doc.add_paragraph(f"[Image not found: {img_path}]")
+    except Exception as e:
+        # 处理图片处理过程中的任何错误
+        doc.add_paragraph(f"[Error adding image: {str(e)}]")
+
 def convert_markdown_to_docx(markdown_content, template_path, output_path, markdown_file=None):
     """Convert markdown content to DOCX using the template as a base."""
     # Copy template to output file
@@ -621,34 +664,8 @@ def convert_markdown_to_docx(markdown_content, template_path, output_path, markd
                 alt_text = match.group(1)
                 img_path = match.group(2)
                 
-                # Resolve the image path relative to the current script directory
-                # If the image path is relative, assume it's in the same directory
-                if not os.path.isabs(img_path):
-                    img_path = os.path.join(os.path.dirname(os.path.abspath(markdown_file)), img_path)
-                
-                try:
-                    # Check if image exists
-                    if os.path.exists(img_path):
-                        # Add image to document with reasonable width
-                        doc.add_picture(img_path, width=Inches(6))
-                        
-                        # Add caption with alt text if provided
-                        if alt_text:
-                            caption = doc.add_paragraph(alt_text)
-                            if styles['Caption']:
-                                try:
-                                    caption.style = styles['Caption']
-                                except:
-                                    caption.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-                                    for run in caption.runs:
-                                        run.italic = True
-                                        run.font.size = Pt(10)
-                    else:
-                        # Add placeholder for missing image
-                        doc.add_paragraph(f"[Image not found: {img_path}]")
-                except Exception as e:
-                    # Handle any errors during image processing
-                    doc.add_paragraph(f"[Error adding image: {str(e)}]")
+                # Use the new insert_image function to handle image processing
+                insert_image(doc, img_path, alt_text, styles, markdown_file)
             
             i += 1
             continue
