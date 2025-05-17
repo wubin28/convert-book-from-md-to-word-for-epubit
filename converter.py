@@ -249,8 +249,8 @@ def process_code_block(doc, lines, i, styles):
         # Create a title for the markdown block with purple background
         title_text = "Markdown 内容"
         
-        # Create the styled box with purple title background (0x5C, 0x4A, 0x77)
-        create_bidi_box(doc, title_text, code_lines, title_color='5C4A77')
+        # Create the styled box with purple title background and light gray content background
+        create_bidi_box(doc, title_text, code_lines, title_color='5C4A77', content_color='F2F2F2')
     else:
         # Regular code block formatting (default)
         # Add each line of the code block
