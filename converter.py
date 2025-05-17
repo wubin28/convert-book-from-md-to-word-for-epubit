@@ -210,6 +210,60 @@ def process_bold_text(text):
     
     return segments
 
+def process_code_block(doc, lines, i, styles):
+    """
+    Process a markdown code block and add it to the document with proper formatting.
+    
+    Args:
+        doc: The Word document object
+        lines: All lines of the markdown content
+        i: Current line index
+        styles: Document styles dictionary
+        
+    Returns:
+        Updated line index after processing the code block
+    """
+    # Get language if specified (e.g., ```markdown, ```python)
+    code_lang = lines[i][3:].strip()
+    
+    # Move to the first line after the opening ```
+    i += 1
+    code_lines = []
+    
+    # Collect all lines until the closing ```
+    while i < len(lines) and not lines[i].startswith('```'):
+        code_lines.append(lines[i])
+        i += 1
+    
+    # Skip the closing ``` marker
+    i += 1
+    
+    # Check for code listing title (特定的中文标题格式)
+    if i < len(lines) and re.match(r'^代码清单\d+-\d+', lines[i]):
+        # Use add_paragraph_with_formatting to handle bold text in code listing title
+        p = add_paragraph_with_formatting(doc, lines[i], styles['Caption'])
+        i += 1
+    
+    # Add each line of the code block
+    for code_line in code_lines:
+        p = doc.add_paragraph(code_line)
+        # Apply "No Spacing" style if available
+        if styles['No Spacing']:
+            try:
+                p.style = styles['No Spacing']
+            except:
+                pass
+        
+        # Add light gray background
+        add_gray_background(p)
+        
+        # Format with monospace font
+        for run in p.runs:
+            run.font.name = 'Courier New'
+            run.font.size = Pt(9)
+    
+    return i
+
 def add_paragraph_with_formatting(doc, text, style=None):
     """Add a paragraph with proper formatting for bold text marked with **."""
     p = doc.add_paragraph()
@@ -382,37 +436,7 @@ def convert_markdown_to_docx(markdown_content, template_path, output_path, markd
         
         # Process code blocks
         if line.startswith('```'):
-            # Start of code block
-            code_lang = line[3:].strip()  # Get language if specified
-            i += 1
-            code_lines = []
-            while i < len(lines) and not lines[i].startswith('```'):
-                code_lines.append(lines[i])
-                i += 1
-            i += 1  # Skip closing ```
-            
-            # Check for code listing title
-            if i < len(lines) and re.match(r'^代码清单\d+-\d+', lines[i]):
-                # Use add_paragraph_with_formatting to handle bold text in code listing title
-                p = add_paragraph_with_formatting(doc, lines[i], styles['Caption'])
-                i += 1
-            
-            # Add code block - no bold processing for code
-            for code_line in code_lines:
-                p = doc.add_paragraph(code_line)
-                if styles['No Spacing']:
-                    try:
-                        p.style = styles['No Spacing']
-                    except:
-                        pass
-                
-                # Add light gray background to code lines
-                add_gray_background(p)
-                
-                for run in p.runs:
-                    run.font.name = 'Courier New'
-                    run.font.size = Pt(9)
-            
+            i = process_code_block(doc, lines, i, styles)
             continue
         
         # Process aside sections (【避坑指南】)
