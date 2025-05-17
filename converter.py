@@ -226,6 +226,11 @@ def process_code_block(doc, lines, i, styles):
     # Get language if specified (e.g., ```markdown, ```python)
     code_lang = lines[i][3:].strip()
     
+    # Check if there's a line that starts with "代码清单" above the code block
+    title_text = None
+    if i > 0 and lines[i-1].strip().startswith('代码清单'):
+        title_text = lines[i-1].strip()
+    
     # Move to the first line after the opening ```
     i += 1
     code_lines = []
@@ -246,11 +251,13 @@ def process_code_block(doc, lines, i, styles):
     
     # Special handling for markdown code blocks - format like 【避坑指南】
     if code_lang.lower() == 'markdown':
-        # Create a title for the markdown block with purple background
-        title_text = "Markdown 内容"
-        
-        # Create the styled box with purple title background and light gray content background
-        create_bidi_box(doc, title_text, code_lines, title_color='5C4A77', content_color='F2F2F2')
+        # Use title from "代码清单" line if exists, otherwise don't include a title
+        if title_text:
+            # Create the styled box with purple title background and light gray content background
+            create_bidi_box(doc, title_text, code_lines, title_color='5C4A77', content_color='F2F2F2')
+        else:
+            # Create content without title by passing empty string as title
+            create_bidi_box(doc, "", code_lines, title_color='5C4A77', content_color='F2F2F2')
     else:
         # Regular code block formatting (default)
         # Add each line of the code block
@@ -296,17 +303,19 @@ def add_paragraph_with_formatting(doc, text, style=None):
 
 def create_bidi_box(doc, title_text, content_lines, title_color='E36C09', content_color='FDE9D9'):
     """Create a styled box for the 避坑指南 section with orange background."""
-    # Create the title paragraph with dark orange background
-    p_title = doc.add_paragraph()
-    p_title._element.get_or_add_pPr().append(
-        parse_xml(f'<w:shd {nsdecls("w")} w:fill="{title_color}" w:val="clear"/>')
-    )
-    
-    # Add the title text (make it bold and WHITE)
-    run = p_title.add_run(title_text)
-    run.bold = True
-    # Set the font color to white
-    run.font.color.rgb = RGBColor(255, 255, 255)  # RGB value for white
+    # Only create title paragraph if title_text is not empty
+    if title_text:
+        # Create the title paragraph with dark orange background
+        p_title = doc.add_paragraph()
+        p_title._element.get_or_add_pPr().append(
+            parse_xml(f'<w:shd {nsdecls("w")} w:fill="{title_color}" w:val="clear"/>')
+        )
+        
+        # Add the title text (make it bold and WHITE)
+        run = p_title.add_run(title_text)
+        run.bold = True
+        # Set the font color to white
+        run.font.color.rgb = RGBColor(255, 255, 255)  # RGB value for white
     
     # Add the content with proper formatting for bold text
     for line in content_lines:
