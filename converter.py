@@ -399,8 +399,11 @@ def insert_image(doc, img_path, alt_text, styles, markdown_file=None):
             # 添加图片到文档，设置合理的宽度
             doc.add_picture(img_path, width=Inches(6))
             
-            # 如果提供了替代文本，添加为图片标题
-            if alt_text:
+            # 获取图片的基本文件名
+            img_basename = os.path.basename(img_path)
+            
+            # 只有当alt_text不为空且不等于图片文件名时才添加标题
+            if alt_text and alt_text != img_basename:
                 caption = doc.add_paragraph(alt_text)
                 if styles['Caption']:
                     try:
